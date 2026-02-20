@@ -4,6 +4,7 @@ basic-pitch==0.3.2
 
 # Audio I/O and signal processing
 librosa==0.10.1
+setuptools>=65.0.0
 soundfile==0.12.1
 torchaudio==2.1.0  # Pinned to avoid torchcodec requirement in newer versions
 
