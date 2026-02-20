@@ -1,0 +1,7 @@
+demucs
+basic-pitch
+librosa
+pretty_midi
+music21
+numpy
+soundfile
