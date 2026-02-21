@@ -4,13 +4,14 @@ basic-pitch==0.3.2
 
 # Audio I/O and signal processing
 librosa==0.10.1
-setuptools==69.5.1 # Pinned to avoid pkg_resources removal in newer versions
+scipy==1.10.1  # Pinned to avoid compatibility issues of newer versions with librosa
 soundfile==0.12.1
 torchaudio==2.1.0  # Pinned to avoid torchcodec requirement in newer versions
 
 # Music theory and symbolic manipulation
 music21==9.1.0
 pretty-midi==0.2.10
+setuptools==69.5.1 # Pinned to avoid pkg_resources removal in newer versions
 
 # General utilities
 numpy==1.24.3
