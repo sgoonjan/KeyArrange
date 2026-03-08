@@ -8,6 +8,7 @@ from keyarrange.analysis.beat_tracker import get_beat_times
 from keyarrange.structure.midi_parser import load_midi
 from keyarrange.structure.quantize import quantize_to_beats
 from keyarrange.piano.merge import merge_tracks
+from keyarrange.piano.transforms import density_reducer, span_enforcer, note_cap
 
 logger = logging.getLogger(__name__)
 
@@ -59,8 +60,18 @@ class Pipeline:
         logger.info("Quantizing left hand notes...")
         quantized_left_notes = quantize_to_beats(left_notes, beat_times)
 
+        logger.info("Applying transformations to Right hand notes...")
+        right_notes = density_reducer(right_notes, bpm)
+        right_notes = span_enforcer(right_notes, max_span=12, hand="right")
+        right_notes = note_cap(right_notes, max_notes=3)
+
+        logger.info("Applying transformations to Left hand notes...")
+        left_notes = density_reducer(quantized_left_notes, bpm)
+        left_notes = span_enforcer(left_notes, max_span=12, hand="left")
+        left_notes = note_cap(left_notes, max_notes=3)
+
         logger.info("Merging tracks...")
-        merge_tracks(right_notes, quantized_left_notes, str(output_file_path), bpm)
+        merge_tracks(right_notes, left_notes, str(output_file_path), bpm)
 
         logger.info(f"Pipeline complete: {output_file_path}")
         return str(output_file_path)
