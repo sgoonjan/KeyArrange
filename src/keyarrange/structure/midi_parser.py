@@ -19,6 +19,7 @@ def load_midi(path: str, hand: str) -> list[Note]:
     for instrument in midi_data.instruments:
         for pm_note in instrument.notes:
             notes.append(Note(
+                id = len(notes),
                 pitch=pm_note.pitch,
                 start=pm_note.start,
                 end=pm_note.end,

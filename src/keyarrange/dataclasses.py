@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 @dataclass
 class Note:
+    id: int
     pitch: int
     start: float
     end: float
