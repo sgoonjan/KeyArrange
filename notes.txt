@@ -1,0 +1,1 @@
+I am done with all the transforms and ran the pipeline. I feel like the output has degraded in quality: I am not able to recognize the part that is after the intro either right now. I removed the note_cap function, and it seemed to have gotten better but still not that good.
