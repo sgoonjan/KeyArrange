@@ -22,7 +22,7 @@ def _group_by_onset(notes: list[Note], window_ms: float = 50.0) -> list[list[Not
 
     return groups
 
-def density_reducer(notes: list[Note], bpm: float) -> list[Note]:
+def density_reducer(notes: list[Note], bpm: float, multiplier: int = 1) -> list[Note]:
     window_duration = 0.5  # 500ms
     step_size = 0.25  # 250ms
     dropped_note_ids = set()
@@ -37,7 +37,7 @@ def density_reducer(notes: list[Note], bpm: float) -> list[Note]:
     while t <= last_note_start_time + window_duration: # Extend windowing slightly past the last note's start time
         window_notes = [note for note in notes if t <= note.start < t + window_duration and note.id not in dropped_note_ids]
 
-        max_notes_in_window = max(1, int(120 / bpm))
+        max_notes_in_window = max(1, int(120 / bpm)) * multiplier
 
         if len(window_notes) > max_notes_in_window:
             # Sort by duration (longest first) and keep only the top `max_notes_in_window`

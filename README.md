@@ -74,19 +74,17 @@ The quick test: can a pianist sight-read it at moderate tempo, clearly assign ha
 ## Roadmap
 
 **v1 — in progress**
-- [ ] End-to-end pipeline: audio → MIDI
-- [ ] Three core playability transforms (density, span, note cap)
-- [ ] Web UI with MIDI download
+- [x] End-to-end pipeline: audio → MIDI
+- [x] Three core playability transforms (density, span, note cap)
+- [x] Web UI with MIDI download
 
 **v2 — planned**
 - [ ] Chord-aware left hand voicing (root + third + fifth from chord analysis)
 - [ ] MuseScore PDF rendering
-- [ ] Before/after example gallery
 
 **v3 — planned**
 - [ ] Beat tracking with madmom for better metric strength scoring
 - [ ] Melody smoothing — strip ornaments and melisma from vocal transcription
-- [ ] Difficulty score on output
 
 **Later**
 - [ ] Fine-tuned arrangement model on POP909 dataset

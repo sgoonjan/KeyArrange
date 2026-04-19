@@ -61,9 +61,9 @@ class Pipeline:
         quantized_left_notes = quantize_to_beats(left_notes, beat_times)
 
         logger.info("Applying transformations to Right hand notes...")
-        # right_notes = density_reducer(right_notes, bpm)
-        # right_notes = span_enforcer(right_notes, max_span=12, hand="right")
-        # right_notes = note_cap(right_notes, max_notes=3)
+        right_notes = density_reducer(right_notes, bpm, multiplier=2)  # Allow density relaxation for vocals
+        right_notes = span_enforcer(right_notes, max_span=12, hand="right")
+        right_notes = note_cap(right_notes, max_notes=3)
 
         logger.info("Applying transformations to Left hand notes...")
         left_notes = density_reducer(quantized_left_notes, bpm)

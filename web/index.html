@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KeyArrange</title>
+
+<!-- MIDI player web component — handles audio synthesis + scrolling piano roll visualization -->
+<script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.23.1/es6/core.js,npm/html-midi-player@1.5.0"></script>
+
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 
@@ -56,10 +60,7 @@
     margin-bottom: 16px;
   }
 
-  h1 em {
-    font-style: italic;
-    color: var(--accent);
-  }
+  h1 em { font-style: italic; color: var(--accent); }
 
   .subtitle {
     font-size: 14px;
@@ -68,10 +69,8 @@
     line-height: 1.7;
   }
 
-  /* Upload section */
-  .upload-section {
-    margin-bottom: 32px;
-  }
+  /* Upload */
+  .upload-section { margin-bottom: 32px; }
 
   .drop-zone {
     border: 1px dashed var(--border);
@@ -98,19 +97,8 @@
     height: 100%;
   }
 
-  .drop-icon {
-    font-family: 'DM Mono', monospace;
-    font-size: 28px;
-    margin-bottom: 12px;
-    color: var(--text-dim);
-  }
-
-  .drop-label {
-    font-size: 14px;
-    color: var(--text-mid);
-    margin-bottom: 6px;
-  }
-
+  .drop-icon { font-size: 28px; margin-bottom: 12px; color: var(--text-dim); }
+  .drop-label { font-size: 14px; color: var(--text-mid); margin-bottom: 6px; }
   .drop-sub {
     font-family: 'DM Mono', monospace;
     font-size: 11px;
@@ -129,7 +117,6 @@
     border: 1px solid rgba(200, 240, 67, 0.2);
     border-radius: 3px;
   }
-
   .file-selected.visible { display: flex; }
 
   .file-name {
@@ -151,10 +138,8 @@
     line-height: 1;
     padding: 0 4px;
   }
-
   .file-clear:hover { color: var(--text); }
 
-  /* Arrange button */
   .btn-arrange {
     width: 100%;
     padding: 16px;
@@ -171,11 +156,7 @@
     margin-top: 12px;
     transition: all 0.15s;
   }
-
-  .btn-arrange:hover:not(:disabled) {
-    background: #d8ff55;
-  }
-
+  .btn-arrange:hover:not(:disabled) { background: #d8ff55; }
   .btn-arrange:disabled {
     background: var(--border);
     color: var(--text-dim);
@@ -191,7 +172,6 @@
     border-radius: 3px;
     margin-top: 20px;
   }
-
   .status-card.visible { display: block; }
 
   .status-eyebrow {
@@ -203,11 +183,7 @@
     margin-bottom: 8px;
   }
 
-  .status-message {
-    font-size: 14px;
-    color: var(--text-mid);
-    line-height: 1.6;
-  }
+  .status-message { font-size: 14px; color: var(--text-mid); line-height: 1.6; }
 
   .progress-bar-track {
     height: 2px;
@@ -221,8 +197,6 @@
     height: 100%;
     background: var(--accent3);
     border-radius: 2px;
-    width: 0%;
-    transition: width 0.6s ease;
     animation: indeterminate 2s ease-in-out infinite;
   }
 
@@ -244,15 +218,10 @@
     color: #ff6b6b;
     font-family: 'DM Mono', monospace;
   }
-
   .error-card.visible { display: block; }
 
   /* Results */
-  .results-section {
-    display: none;
-    margin-top: 32px;
-  }
-
+  .results-section { display: none; margin-top: 32px; }
   .results-section.visible { display: block; }
 
   .results-header {
@@ -281,8 +250,8 @@
     color: var(--text);
   }
 
-  /* Piano roll */
-  .piano-roll-wrap {
+  /* MIDI player container */
+  .player-wrap {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 3px;
@@ -290,47 +259,61 @@
     margin-bottom: 20px;
   }
 
-  .piano-roll-label {
+  .player-label {
     font-family: 'DM Mono', monospace;
     font-size: 10px;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--text-dim);
-    padding: 12px 16px 0;
-  }
-
-  .piano-roll-wrap img {
-    width: 100%;
-    display: block;
-  }
-
-  .piano-roll-legend {
+    padding: 12px 16px 8px;
     display: flex;
-    gap: 20px;
-    padding: 10px 16px 14px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .player-legend {
+    display: flex;
+    gap: 16px;
   }
 
   .legend-item {
     display: flex;
     align-items: center;
-    gap: 7px;
-    font-size: 12px;
-    color: var(--text-mid);
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-dim);
   }
 
   .legend-dot {
-    width: 10px;
-    height: 10px;
+    width: 9px;
+    height: 9px;
     border-radius: 2px;
     flex-shrink: 0;
   }
 
-  /* Download */
-  .download-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
+  /*
+    html-midi-player uses a shadow DOM so deep CSS overrides are limited.
+    These CSS custom properties are what the component officially exposes.
+    The visualizer background and note colors are the most impactful ones.
+  */
+  midi-player {
+    display: block;
+    width: 100%;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
   }
+
+  midi-visualizer {
+    display: block;
+    width: 100%;
+    /* Note colors per track index — track 0 = right hand, track 1 = left hand */
+    --midi-visualizer-notes-color: #4a9eff;       /* fallback / right hand */
+    background: #0a0a0a;
+    min-height: 160px;
+  }
+
+  /* Download */
+  .download-row { display: flex; gap: 10px; flex-wrap: wrap; }
 
   .btn-download {
     padding: 12px 20px;
@@ -349,12 +332,7 @@
     align-items: center;
     gap: 8px;
   }
-
-  .btn-download:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
+  .btn-download:hover { border-color: var(--accent); color: var(--accent); }
   .btn-download .btn-icon { font-size: 15px; }
 
   /* Footer */
@@ -370,7 +348,6 @@
     flex-wrap: wrap;
     gap: 8px;
   }
-
   footer a { color: var(--text-dim); text-decoration: none; }
   footer a:hover { color: var(--accent); }
 </style>
@@ -404,11 +381,11 @@
   <!-- Status -->
   <div class="status-card" id="statusCard">
     <div class="status-eyebrow">Processing</div>
-    <div class="status-message" id="statusMessage">
+    <div class="status-message">
       Separating stems, transcribing, arranging… this takes 1–3 minutes depending on song length.
     </div>
     <div class="progress-bar-track">
-      <div class="progress-bar-fill" id="progressFill"></div>
+      <div class="progress-bar-fill"></div>
     </div>
   </div>
 
@@ -422,22 +399,29 @@
       <h2 class="results-title">Your arrangement</h2>
     </div>
 
-    <div class="piano-roll-wrap" id="pianoRollWrap" style="display:none">
-      <div class="piano-roll-label">Piano Roll · time → pitch ↑</div>
-      <img id="pianoRollImg" src="" alt="Piano roll visualization" />
-      <div class="piano-roll-legend">
-        <div class="legend-item">
-          <div class="legend-dot" style="background:#4a9eff"></div>
-          Right hand — melody
-        </div>
-        <div class="legend-item">
-          <div class="legend-dot" style="background:#ff6b6b"></div>
-          Left hand — harmony
-        </div>
-        <div class="legend-item" style="margin-left:auto; font-size:11px; color:var(--text-dim)">
-          Dashed line = middle C
+    <div class="player-wrap">
+      <div class="player-label">
+        <span>Piano Roll · press play to hear it</span>
+        <div class="player-legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#ff6b6b"></div>
+            Playing now
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#4a9eff"></div>
+            Upcoming
+          </div>
         </div>
       </div>
+
+      <!--
+        midi-visualizer renders the scrolling piano roll.
+        midi-player handles play/pause/seek and audio via Magenta soundfont.
+        They are linked by the visualizer="#midiVisualizer" attribute.
+        sound-font enables the Magenta piano soundfont (requires internet).
+      -->
+      <midi-visualizer type="piano-roll" id="midiVisualizer"></midi-visualizer>
+      <midi-player id="midiPlayer" sound-font visualizer="#midiVisualizer"></midi-player>
     </div>
 
     <div class="download-row">
@@ -464,16 +448,13 @@
   const fileClear    = document.getElementById('fileClear');
   const arrangeBtn   = document.getElementById('arrangeBtn');
   const statusCard   = document.getElementById('statusCard');
-  const statusMsg    = document.getElementById('statusMessage');
   const errorCard    = document.getElementById('errorCard');
   const results      = document.getElementById('resultsSection');
-  const pianoWrap    = document.getElementById('pianoRollWrap');
-  const pianoImg     = document.getElementById('pianoRollImg');
+  const midiPlayer   = document.getElementById('midiPlayer');
   const midiDownload = document.getElementById('midiDownload');
 
   let selectedFile = null;
 
-  // Drag-over styling
   dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
   dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
   dropZone.addEventListener('drop', e => {
@@ -518,21 +499,15 @@
       const res = await fetch('/upload', { method: 'POST', body: form });
       const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.detail || 'Something went wrong.');
-      }
+      if (!res.ok) throw new Error(data.detail || 'Something went wrong.');
 
       hide(statusCard);
       show(results);
 
+      // Setting src on midi-player triggers it to fetch the MIDI and load it
+      // into both the player controls and the linked visualizer automatically.
+      midiPlayer.setAttribute('src', data.midi_url);
       midiDownload.href = data.midi_url;
-
-      if (data.piano_roll_url) {
-        pianoImg.src = data.piano_roll_url;
-        pianoWrap.style.display = 'block';
-      } else {
-        pianoWrap.style.display = 'none';
-      }
 
     } catch (err) {
       hide(statusCard);
