@@ -30,12 +30,14 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Serve frontend
-app.mount("/web", StaticFiles(directory="web"), name="web")
+from pathlib import Path
+WEB_DIR = Path(__file__).parent.parent.parent.parent / "web"  # src/keyarrange/api/app.py → repo root
+app.mount("/web", StaticFiles(directory=str(WEB_DIR)), name="web")
 
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    return (Path("web") / "index.html").read_text()
+    return (WEB_DIR / "index.html").read_text()
 
 
 @app.get("/health")
