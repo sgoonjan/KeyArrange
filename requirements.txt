@@ -1,7 +1,22 @@
-demucs
-basic-pitch
-librosa
-pretty_midi
-music21
-numpy
-soundfile
+# Core audio processing
+demucs==4.0.0
+basic-pitch==0.3.2
+
+# Audio I/O and signal processing
+librosa==0.10.1
+scipy==1.10.1  # Pinned to avoid compatibility issues of newer versions with librosa
+soundfile==0.12.1
+torchaudio==2.1.0  # Pinned to avoid torchcodec requirement in newer versions
+
+# Music theory and symbolic manipulation
+music21==9.1.0
+pretty-midi==0.2.10
+setuptools==69.5.1 # Pinned to avoid pkg_resources removal in newer versions
+
+# Frontend and visualization
+fastapi==0.135.1
+uvicorn==0.42.0
+python-multipart==0.0.22
+
+# General utilities
+numpy==1.24.3

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KeyArrange</title>
+
+<!-- MIDI player web component — handles audio synthesis + scrolling piano roll visualization -->
+<script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.23.1/es6/core.js,npm/html-midi-player@1.5.0"></script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0d0d0d;
+    --surface: #141414;
+    --surface2: #1a1a1a;
+    --border: #242424;
+    --accent: #c8f043;
+    --accent2: #f0c843;
+    --accent3: #43c8f0;
+    --text: #e8e8e0;
+    --text-dim: #666;
+    --text-mid: #999;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    padding: 48px 24px 80px;
+  }
+
+  .container { max-width: 760px; margin: 0 auto; }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 32px;
+    margin-bottom: 40px;
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(28px, 5vw, 44px);
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  h1 em { font-style: italic; color: var(--accent); }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--text-mid);
+    max-width: 480px;
+    line-height: 1.7;
+  }
+
+  /* Upload */
+  .upload-section { margin-bottom: 32px; }
+
+  .drop-zone {
+    border: 1px dashed var(--border);
+    border-radius: 3px;
+    padding: 40px 32px;
+    text-align: center;
+    background: var(--surface);
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(200, 240, 67, 0.03);
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .drop-icon { font-size: 28px; margin-bottom: 12px; color: var(--text-dim); }
+  .drop-label { font-size: 14px; color: var(--text-mid); margin-bottom: 6px; }
+  .drop-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .file-selected {
+    margin-top: 14px;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: rgba(200, 240, 67, 0.06);
+    border: 1px solid rgba(200, 240, 67, 0.2);
+    border-radius: 3px;
+  }
+  .file-selected.visible { display: flex; }
+
+  .file-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-clear {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 4px;
+  }
+  .file-clear:hover { color: var(--text); }
+
+  .btn-arrange {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: #0d0d0d;
+    border: none;
+    border-radius: 3px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: all 0.15s;
+  }
+  .btn-arrange:hover:not(:disabled) { background: #d8ff55; }
+  .btn-arrange:disabled {
+    background: var(--border);
+    color: var(--text-dim);
+    cursor: not-allowed;
+  }
+
+  /* Status */
+  .status-card {
+    display: none;
+    padding: 20px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    margin-top: 20px;
+  }
+  .status-card.visible { display: block; }
+
+  .status-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent3);
+    margin-bottom: 8px;
+  }
+
+  .status-message { font-size: 14px; color: var(--text-mid); line-height: 1.6; }
+
+  .progress-bar-track {
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 16px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent3);
+    border-radius: 2px;
+    animation: indeterminate 2s ease-in-out infinite;
+  }
+
+  @keyframes indeterminate {
+    0%   { width: 5%;  margin-left: 0%; }
+    50%  { width: 40%; margin-left: 30%; }
+    100% { width: 5%;  margin-left: 95%; }
+  }
+
+  /* Error */
+  .error-card {
+    display: none;
+    padding: 16px 20px;
+    background: rgba(255, 60, 60, 0.06);
+    border: 1px solid rgba(255, 60, 60, 0.2);
+    border-radius: 3px;
+    margin-top: 20px;
+    font-size: 13px;
+    color: #ff6b6b;
+    font-family: 'DM Mono', monospace;
+  }
+  .error-card.visible { display: block; }
+
+  /* Results */
+  .results-section { display: none; margin-top: 32px; }
+  .results-section.visible { display: block; }
+
+  .results-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .results-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    background: rgba(200, 240, 67, 0.12);
+    color: var(--accent);
+  }
+
+  .results-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--text);
+  }
+
+  /* MIDI player container */
+  .player-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .player-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 12px 16px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .player-legend {
+    display: flex;
+    gap: 16px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /*
+    html-midi-player uses a shadow DOM so deep CSS overrides are limited.
+    These CSS custom properties are what the component officially exposes.
+    The visualizer background and note colors are the most impactful ones.
+  */
+  midi-player {
+    display: block;
+    width: 100%;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+  }
+
+  midi-visualizer {
+    display: block;
+    width: 100%;
+    /* Note colors per track index — track 0 = right hand, track 1 = left hand */
+    --midi-visualizer-notes-color: #4a9eff;       /* fallback / right hand */
+    background: #0a0a0a;
+    min-height: 160px;
+  }
+
+  /* Download */
+  .download-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .btn-download {
+    padding: 12px 20px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-download:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-download .btn-icon { font-size: 15px; }
+
+  /* Footer */
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  footer a { color: var(--text-dim); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="eyebrow">KeyArrange · MVP</div>
+    <h1>Upload a song.<br><em>Get music you can play.</em></h1>
+    <p class="subtitle">Drop any pop song. The pipeline separates stems, transcribes each part, and arranges a two-hand piano version built around physical playability constraints.</p>
+  </header>
+
+  <!-- Upload -->
+  <div class="upload-section">
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".mp3,.wav" />
+      <div class="drop-icon">♩</div>
+      <div class="drop-label">Drop an MP3 or WAV here</div>
+      <div class="drop-sub">or click to browse</div>
+    </div>
+
+    <div class="file-selected" id="fileSelected">
+      <span class="file-name" id="fileName"></span>
+      <button class="file-clear" id="fileClear" title="Remove">✕</button>
+    </div>
+
+    <button class="btn-arrange" id="arrangeBtn" disabled>Arrange →</button>
+  </div>
+
+  <!-- Status -->
+  <div class="status-card" id="statusCard">
+    <div class="status-eyebrow">Processing</div>
+    <div class="status-message">
+      Separating stems, transcribing, arranging… this takes 1–3 minutes depending on song length.
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill"></div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-card" id="errorCard"></div>
+
+  <!-- Results -->
+  <div class="results-section" id="resultsSection">
+    <div class="results-header">
+      <span class="results-tag">Output</span>
+      <h2 class="results-title">Your arrangement</h2>
+    </div>
+
+    <div class="player-wrap">
+      <div class="player-label">
+        <span>Piano Roll · press play to hear it</span>
+        <div class="player-legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#ff6b6b"></div>
+            Playing now
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#4a9eff"></div>
+            Upcoming
+          </div>
+        </div>
+      </div>
+
+      <!--
+        midi-visualizer renders the scrolling piano roll.
+        midi-player handles play/pause/seek and audio via Magenta soundfont.
+        They are linked by the visualizer="#midiVisualizer" attribute.
+        sound-font enables the Magenta piano soundfont (requires internet).
+      -->
+      <midi-visualizer type="piano-roll" id="midiVisualizer"></midi-visualizer>
+      <midi-player id="midiPlayer" sound-font visualizer="#midiVisualizer"></midi-player>
+    </div>
+
+    <div class="download-row">
+      <a class="btn-download" id="midiDownload" href="#" download="keyarrange.mid">
+        <span class="btn-icon">↓</span> Download MIDI
+      </a>
+    </div>
+  </div>
+
+  <footer>
+    <span>KeyArrange · audio in, piano arrangement out</span>
+    <span>
+      <a href="https://github.com/sgoonjan/KeyArrange" target="_blank">GitHub →</a>
+    </span>
+  </footer>
+
+</div>
+
+<script>
+  const fileInput    = document.getElementById('fileInput');
+  const dropZone     = document.getElementById('dropZone');
+  const fileSelected = document.getElementById('fileSelected');
+  const fileName     = document.getElementById('fileName');
+  const fileClear    = document.getElementById('fileClear');
+  const arrangeBtn   = document.getElementById('arrangeBtn');
+  const statusCard   = document.getElementById('statusCard');
+  const errorCard    = document.getElementById('errorCard');
+  const results      = document.getElementById('resultsSection');
+  const midiPlayer   = document.getElementById('midiPlayer');
+  const midiDownload = document.getElementById('midiDownload');
+
+  let selectedFile = null;
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f) setFile(f);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) setFile(fileInput.files[0]);
+  });
+
+  fileClear.addEventListener('click', clearFile);
+
+  function setFile(f) {
+    selectedFile = f;
+    fileName.textContent = f.name;
+    fileSelected.classList.add('visible');
+    arrangeBtn.disabled = false;
+    hide(errorCard); hide(results); hide(statusCard);
+  }
+
+  function clearFile() {
+    selectedFile = null;
+    fileInput.value = '';
+    fileSelected.classList.remove('visible');
+    arrangeBtn.disabled = true;
+  }
+
+  arrangeBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    hide(errorCard); hide(results);
+    show(statusCard);
+    arrangeBtn.disabled = true;
+
+    const form = new FormData();
+    form.append('file', selectedFile);
+
+    try {
+      const res = await fetch('/upload', { method: 'POST', body: form });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.detail || 'Something went wrong.');
+
+      hide(statusCard);
+      show(results);
+
+      // Setting src on midi-player triggers it to fetch the MIDI and load it
+      // into both the player controls and the linked visualizer automatically.
+      midiPlayer.setAttribute('src', data.midi_url);
+      midiDownload.href = data.midi_url;
+
+    } catch (err) {
+      hide(statusCard);
+      errorCard.textContent = '⚠ ' + err.message;
+      show(errorCard);
+    } finally {
+      arrangeBtn.disabled = false;
+    }
+  });
+
+  function show(el) { el.classList.add('visible'); }
+  function hide(el) { el.classList.remove('visible'); }
+</script>
+</body>
+</html>
