@@ -73,12 +73,12 @@ The quick test: can a pianist sight-read it at moderate tempo, clearly assign ha
 
 ## Roadmap
 
-**v1 — in progress**
+**v1 — complete**
 - [x] End-to-end pipeline: audio → MIDI
 - [x] Three core playability transforms (density, span, note cap)
 - [x] Web UI with MIDI download
 
-**v2 — planned**
+**v2 — in progress**
 - [ ] Chord-aware left hand voicing (root + third + fifth from chord analysis)
 - [ ] MuseScore PDF rendering
 
