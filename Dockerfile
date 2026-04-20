@@ -10,10 +10,6 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Install CPU-only torch first
-RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu \
-    torch torchvision torchaudio
-
 # Install Python deps first so Docker layer cache is reused on code changes
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
