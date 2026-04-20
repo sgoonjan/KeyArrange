@@ -12,7 +12,7 @@ pinned: false
 
 **Upload a song. Get sheet music you can actually play.**
 
-[Live Demo](#demo) · [Sample Outputs](#sample-outputs)
+[Try the Live Demo 🤗](https://huggingface.co/spaces/Goonjan/KeyArrange) · [Sample Outputs](#sample-outputs)
 
 > **Status:** The end-to-end pipeline is actively being built. See the [Roadmap](#roadmap) for what's done and what's next.
 
@@ -45,7 +45,7 @@ KeyArrange does. It takes any pop song as audio input, separates the musical rol
 [  Choose file  ]   →   [ Arrange ]   →   [ Download PDF ]  [ Download MIDI ]
 ```
 
-*Live demo coming with v1 deploy.*
+[*Live demo (v1) is now live on Hugging Face Spaces!*](https://huggingface.co/spaces/Goonjan/KeyArrange)
 
 ### Sample Outputs
 
