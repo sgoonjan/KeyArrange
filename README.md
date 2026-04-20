@@ -1,3 +1,13 @@
+---
+title: KeyArrange
+emoji: 🎹
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # KeyArrange
 
 **Upload a song. Get sheet music you can actually play.**
