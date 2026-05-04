@@ -58,17 +58,10 @@ async def upload(file: UploadFile = File(...)):
 
     try:
         loop = asyncio.get_event_loop()
-        midi_path = await loop.run_in_executor(None, _run_pipeline, str(upload_path), job_id)
+        midi_path, piano_roll_path = await loop.run_in_executor(None, _run_pipeline, str(upload_path), job_id)
     except Exception as e:
         logger.error(f"Job {job_id} failed: {e}")
         raise HTTPException(status_code=500, detail=f"Pipeline failed: {str(e)}")
-
-    piano_roll_path = Path(midi_path).parent / "piano_roll.png"
-    try:
-        await loop.run_in_executor(None, render_piano_roll, midi_path, str(piano_roll_path))
-    except Exception as e:
-        logger.warning(f"Job {job_id}: piano roll render failed ({e}), continuing without it")
-        piano_roll_path = None
 
     return {
         "job_id": job_id,
@@ -77,7 +70,7 @@ async def upload(file: UploadFile = File(...)):
     }
 
 
-def _run_pipeline(upload_path: str, job_id: str) -> str:
+def _run_pipeline(upload_path: str, job_id: str) -> tuple[str, str | None]:
     """Synchronous pipeline call — run in executor to avoid blocking event loop."""
     output_dir = str(OUTPUT_DIR / job_id)
     pipeline = Pipeline(upload_path, output_dir)

@@ -10,6 +10,7 @@ from keyarrange.structure.quantize import quantize_to_beats
 from keyarrange.piano.merge import merge_tracks
 from keyarrange.piano.voicing import correct_octave, apply_velocity_curve
 from keyarrange.piano.transforms import density_reducer, span_enforcer, note_cap
+from keyarrange.render.piano_roll import render_piano_roll
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ class Pipeline:
     
     def run(self) -> str:
         output_file_path = self.arranged_dir / "arranged.mid"
+        piano_roll_path = self.arranged_dir / "piano_roll.png"
 
         logger.info("Running stem separation...")
         stem_paths = separate(str(self.input_path), str(self.stems_dir))
@@ -77,5 +79,12 @@ class Pipeline:
         logger.info("Merging tracks...")
         merge_tracks(right_notes, left_notes, str(output_file_path), bpm)
 
+        logger.info("Rendering piano roll...")
+        try:
+            render_piano_roll(right_notes, left_notes, str(piano_roll_path))
+        except Exception as e:
+            logger.warning(f"Piano roll render failed ({e}), continuing without it")
+            piano_roll_path = None
+
         logger.info(f"Pipeline complete: {output_file_path}")
-        return str(output_file_path)
+        return str(output_file_path), str(piano_roll_path) if piano_roll_path else None
