@@ -58,26 +58,20 @@ async def upload(file: UploadFile = File(...)):
 
     try:
         loop = asyncio.get_event_loop()
-        midi_path = await loop.run_in_executor(None, _run_pipeline, str(upload_path), job_id)
+        midi_path, piano_roll_path, pdf_path = await loop.run_in_executor(None, _run_pipeline, str(upload_path), job_id)
     except Exception as e:
         logger.error(f"Job {job_id} failed: {e}")
         raise HTTPException(status_code=500, detail=f"Pipeline failed: {str(e)}")
 
-    piano_roll_path = Path(midi_path).parent / "piano_roll.png"
-    try:
-        await loop.run_in_executor(None, render_piano_roll, midi_path, str(piano_roll_path))
-    except Exception as e:
-        logger.warning(f"Job {job_id}: piano roll render failed ({e}), continuing without it")
-        piano_roll_path = None
-
     return {
         "job_id": job_id,
         "midi_url": f"/download/midi/{job_id}",
-        "piano_roll_url": f"/download/piano_roll/{job_id}" if piano_roll_path and piano_roll_path.exists() else None,
+        "piano_roll_url": f"/download/piano_roll/{job_id}" if piano_roll_path else None,
+        "pdf_url": f"/download/pdf/{job_id}" if pdf_path else None,
     }
 
 
-def _run_pipeline(upload_path: str, job_id: str) -> str:
+def _run_pipeline(upload_path: str, job_id: str) -> tuple[str, str | None, str | None]:
     """Synchronous pipeline call — run in executor to avoid blocking event loop."""
     output_dir = str(OUTPUT_DIR / job_id)
     pipeline = Pipeline(upload_path, output_dir)
@@ -99,6 +93,12 @@ async def download(file_type: str, job_id: str):
         if not matches:
             raise HTTPException(status_code=404, detail="Piano roll not found.")
         return FileResponse(str(matches[0]), media_type="image/png")
+
+    elif file_type == "pdf":
+        matches = list((OUTPUT_DIR / job_id).rglob("arranged.pdf"))
+        if not matches:
+            raise HTTPException(status_code=404, detail="PDF not found.")
+        return FileResponse(str(matches[0]), media_type="application/pdf", filename="keyarrange.pdf")
 
     else:
         raise HTTPException(status_code=400, detail="file_type must be 'midi' or 'piano_roll'.")
