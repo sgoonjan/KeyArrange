@@ -23,7 +23,7 @@ def apply_velocity_curve(notes: list[Note], beat_times: list[float]) -> list[Not
         humanized = base_velocity + random.randint(-10, 10)
         velocity = max(30, min(110, humanized))  # clamp to sensible piano range
         
-        result.append(Note(pitch=note.pitch, start=note.start, duration=note.duration, velocity=velocity))
+        result.append(Note(id=note.id, pitch=note.pitch, start=note.start, end=note.end, velocity=velocity, hand=note.hand))
     
     return result
 
@@ -43,6 +43,6 @@ def correct_octave(notes: list[Note], target_min: int = 48) -> list[Note]:
         return notes
     
     shift = octaves_up * 12
-    return [Note(pitch=min(n.pitch + shift, 127), start=n.start, duration=n.duration, velocity=n.velocity) for n in notes]
+    return [Note(id=n.id, pitch=min(n.pitch + shift, 127), start=n.start, end=n.end, velocity=n.velocity, hand=n.hand) for n in notes]
 
 
