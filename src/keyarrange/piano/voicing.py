@@ -46,3 +46,39 @@ def correct_octave(notes: list[Note], target_min: int = 48) -> list[Note]:
     return [Note(id=n.id, pitch=min(n.pitch + shift, 127), start=n.start, end=n.end, velocity=n.velocity, hand=n.hand) for n in notes]
 
 
+def generate_left_hand(
+    chords: list[tuple[str, float]],
+    beat_times: list[float],
+    bpm: float,
+) -> list[Note]:
+    """Generate left hand notes from chord labels — root+third+fifth per beat."""
+    _INTERVALS = {"major": [0, 4, 7], "minor": [0, 3, 7], "diminished": [0, 3, 6], "augmented": [0, 4, 8]}
+    _NOTE_OFFSETS = {"C": 0, "C#": 1, "D": 2, "D#": 3, "E": 4, "F": 5, "F#": 6, "G": 7, "G#": 8, "A": 9, "A#": 10, "B": 11}
+
+    beat_duration = 60.0 / bpm
+    notes = []
+    note_id = 0
+
+    for chord_label, beat_time in chords:
+        parts = chord_label.split()
+        root_name, quality = parts[0], parts[1]
+
+        root_pc = _NOTE_OFFSETS.get(root_name, 0)
+        intervals = _INTERVALS.get(quality, [0, 4, 7])
+
+        root_midi = 48 + root_pc
+        if root_midi > 60:
+            root_midi -= 12
+
+        for interval in intervals:
+            notes.append(Note(
+                id=note_id,
+                pitch=root_midi + interval,
+                start=beat_time,
+                end=beat_time + beat_duration * 0.9,
+                velocity=70, # Reasonable default, to be updated by velocity curve later
+                hand="left",
+            ))
+            note_id += 1
+
+    return notes

@@ -3,13 +3,19 @@ import logging
 from pathlib import Path
 
 from keyarrange.separation.demucs_runner import separate
+
 from keyarrange.transcription.basic_pitch_transcriptor import transcribe_stem
+
 from keyarrange.analysis.beat_tracker import get_beat_times
+from keyarrange.analysis.scale_detection import get_scale
+
 from keyarrange.structure.midi_parser import load_midi
-from keyarrange.structure.quantize import quantize_to_beats
+from keyarrange.structure.chord_estimator import estimate_chords
+
 from keyarrange.piano.merge import merge_tracks
-from keyarrange.piano.voicing import correct_octave, apply_velocity_curve
+from keyarrange.piano.voicing import apply_velocity_curve, generate_left_hand
 from keyarrange.piano.transforms import density_reducer, span_enforcer, note_cap
+
 from keyarrange.render.piano_roll import render_piano_roll
 
 logger = logging.getLogger(__name__)
@@ -51,8 +57,14 @@ class Pipeline:
         logger.info("Transcribing bass stem...")
         bass_midi_path = transcribe_stem(bass_audio_path, str(self.transcriptions_dir))
 
+        logger.info("Transcribing other stem...")
+        other_midi_path = transcribe_stem(stem_paths["other"], str(self.transcriptions_dir))
+
         logger.info("Getting beat times...")
         beat_times, bpm = get_beat_times(str(self.input_path))
+
+        logger.info("Detecting scale...")
+        scale = get_scale(str(self.input_path))
 
         logger.info("Loading vocal MIDI...")
         right_notes = load_midi(str(vocals_midi_path), hand="right")
@@ -60,8 +72,14 @@ class Pipeline:
         logger.info("Loading bass MIDI...")
         left_notes = load_midi(str(bass_midi_path), hand="left")
 
-        logger.info("Quantizing left hand notes...")
-        quantized_left_notes = quantize_to_beats(left_notes, beat_times)
+        logger.info("Loading other stem MIDI...")
+        other_notes = load_midi(str(other_midi_path), hand="left") # hand label irrelevant here
+
+        logger.info("Estimating chords...")
+        chords = estimate_chords(other_notes, beat_times, scale)
+
+        logger.info("Generating chord-aware left hand...")
+        left_notes = generate_left_hand(chords, beat_times, bpm)
 
         logger.info("Applying transformations to Right hand notes...")
         right_notes = density_reducer(right_notes, bpm, multiplier=2)  # Allow density relaxation for vocals
@@ -70,7 +88,6 @@ class Pipeline:
         right_notes = apply_velocity_curve(right_notes, beat_times)
 
         logger.info("Applying transformations to Left hand notes...")
-        left_notes = correct_octave(quantized_left_notes, target_min=48)
         left_notes = density_reducer(left_notes, bpm)
         left_notes = span_enforcer(left_notes, max_span=12, hand="left")
         left_notes = note_cap(left_notes, max_notes=3)
