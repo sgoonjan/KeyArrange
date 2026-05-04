@@ -17,6 +17,7 @@ from keyarrange.piano.voicing import apply_velocity_curve, generate_left_hand
 from keyarrange.piano.transforms import density_reducer, span_enforcer, note_cap
 
 from keyarrange.render.piano_roll import render_piano_roll
+from keyarrange.render.musescore import render_pdf
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +43,10 @@ class Pipeline:
         self.transcriptions_dir.mkdir(parents=True, exist_ok=True)
         self.arranged_dir.mkdir(parents=True, exist_ok=True)
     
-    def run(self) -> str:
+    def run(self) -> tuple[str, str | None, str | None]:
         output_file_path = self.arranged_dir / "arranged.mid"
         piano_roll_path = self.arranged_dir / "piano_roll.png"
+        pdf_path = self.arranged_dir / "arranged.pdf"
 
         logger.info("Running stem separation...")
         stem_paths = separate(str(self.input_path), str(self.stems_dir))
@@ -102,6 +104,9 @@ class Pipeline:
         except Exception as e:
             logger.warning(f"Piano roll render failed ({e}), continuing without it")
             piano_roll_path = None
+        
+        logger.info("Rendering PDF...")
+        pdf_result = render_pdf(str(output_file_path), str(pdf_path))
 
         logger.info(f"Pipeline complete: {output_file_path}")
-        return str(output_file_path), str(piano_roll_path) if piano_roll_path else None
+        return str(output_file_path), str(piano_roll_path) if piano_roll_path else None, pdf_result
