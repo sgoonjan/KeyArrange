@@ -66,8 +66,8 @@ async def upload(file: UploadFile = File(...)):
     return {
         "job_id": job_id,
         "midi_url": f"/download/midi/{job_id}",
-        "piano_roll_url": f"/download/piano_roll/{job_id}" if piano_roll_path and piano_roll_path.exists() else None,
-        "pdf_url": f"/download/pdf/{job_id}" if pdf_path and pdf_path.exists() else None,
+        "piano_roll_url": f"/download/piano_roll/{job_id}" if piano_roll_path else None,
+        "pdf_url": f"/download/pdf/{job_id}" if pdf_path else None,
     }
 
 
@@ -93,6 +93,12 @@ async def download(file_type: str, job_id: str):
         if not matches:
             raise HTTPException(status_code=404, detail="Piano roll not found.")
         return FileResponse(str(matches[0]), media_type="image/png")
+
+    elif file_type == "pdf":
+        matches = list((OUTPUT_DIR / job_id).rglob("arranged.pdf"))
+        if not matches:
+            raise HTTPException(status_code=404, detail="PDF not found.")
+        return FileResponse(str(matches[0]), media_type="application/pdf", filename="keyarrange.pdf")
 
     else:
         raise HTTPException(status_code=400, detail="file_type must be 'midi' or 'piano_roll'.")

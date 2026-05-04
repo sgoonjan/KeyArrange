@@ -428,6 +428,9 @@
       <a class="btn-download" id="midiDownload" href="#" download="keyarrange.mid">
         <span class="btn-icon">↓</span> Download MIDI
       </a>
+      <a class="btn-download" id="pdfDownload" href="#" download="keyarrange.pdf" style="display:none">
+        <span class="btn-icon">↓</span> Download Sheet Music PDF
+      </a>
     </div>
   </div>
 
@@ -452,7 +455,7 @@
   const results      = document.getElementById('resultsSection');
   const midiPlayer   = document.getElementById('midiPlayer');
   const midiDownload = document.getElementById('midiDownload');
-
+  const pdfDownload = document.getElementById('pdfDownload');
   let selectedFile = null;
 
   dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
@@ -508,7 +511,12 @@
       // into both the player controls and the linked visualizer automatically.
       midiPlayer.setAttribute('src', data.midi_url);
       midiDownload.href = data.midi_url;
-
+      if (data.pdf_url) {
+          pdfDownload.href = data.pdf_url;
+          pdfDownload.style.display = 'inline-flex';
+      } else {
+          pdfDownload.style.display = 'none';
+      }
     } catch (err) {
       hide(statusCard);
       errorCard.textContent = '⚠ ' + err.message;
