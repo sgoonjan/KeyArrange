@@ -90,9 +90,9 @@ class Pipeline:
         right_notes = apply_velocity_curve(right_notes, beat_times)
 
         logger.info("Applying transformations to Left hand notes...")
-        left_notes = density_reducer(left_notes, bpm)
-        left_notes = span_enforcer(left_notes, max_span=12, hand="left")
-        left_notes = note_cap(left_notes, max_notes=3)
+        # left_notes = density_reducer(left_notes, bpm)
+        # left_notes = span_enforcer(left_notes, max_span=12, hand="left")
+        # left_notes = note_cap(left_notes, max_notes=3)
         left_notes = apply_velocity_curve(left_notes, beat_times)
 
         logger.info("Merging tracks...")
