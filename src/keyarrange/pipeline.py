@@ -56,8 +56,8 @@ class Pipeline:
         logger.info("Transcribing vocal stem...")
         vocals_midi_path = transcribe_stem(vocals_audio_path, str(self.transcriptions_dir))
 
-        # logger.info("Transcribing bass stem...")
-        # bass_midi_path = transcribe_stem(bass_audio_path, str(self.transcriptions_dir))
+        logger.info("Transcribing bass stem...")
+        bass_midi_path = transcribe_stem(bass_audio_path, str(self.transcriptions_dir))
 
         logger.info("Transcribing other stem...")
         other_midi_path = transcribe_stem(stem_paths["other"], str(self.transcriptions_dir))
@@ -71,14 +71,14 @@ class Pipeline:
         logger.info("Loading vocal MIDI...")
         right_notes = load_midi(str(vocals_midi_path), hand="right")
 
-        # logger.info("Loading bass MIDI...")
-        # left_notes = load_midi(str(bass_midi_path), hand="left")
+        logger.info("Loading bass MIDI...")
+        bass_notes = load_midi(str(bass_midi_path), hand="left")
 
         logger.info("Loading other stem MIDI...")
         other_notes = load_midi(str(other_midi_path), hand="left") # hand label irrelevant here
 
         logger.info("Estimating chords...")
-        chords = estimate_chords(other_notes, beat_times, scale)
+        chords = estimate_chords(other_notes, bass_notes, beat_times, scale)
 
         logger.info("Generating chord-aware left hand...")
         left_notes = generate_left_hand(chords, beat_times, bpm)
