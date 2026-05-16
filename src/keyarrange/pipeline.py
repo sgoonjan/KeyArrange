@@ -56,8 +56,8 @@ class Pipeline:
         logger.info("Transcribing vocal stem...")
         vocals_midi_path = transcribe_stem(vocals_audio_path, str(self.transcriptions_dir))
 
-        logger.info("Transcribing bass stem...")
-        bass_midi_path = transcribe_stem(bass_audio_path, str(self.transcriptions_dir))
+        # logger.info("Transcribing bass stem...")
+        # bass_midi_path = transcribe_stem(bass_audio_path, str(self.transcriptions_dir))
 
         logger.info("Transcribing other stem...")
         other_midi_path = transcribe_stem(stem_paths["other"], str(self.transcriptions_dir))
@@ -71,8 +71,8 @@ class Pipeline:
         logger.info("Loading vocal MIDI...")
         right_notes = load_midi(str(vocals_midi_path), hand="right")
 
-        logger.info("Loading bass MIDI...")
-        left_notes = load_midi(str(bass_midi_path), hand="left")
+        # logger.info("Loading bass MIDI...")
+        # left_notes = load_midi(str(bass_midi_path), hand="left")
 
         logger.info("Loading other stem MIDI...")
         other_notes = load_midi(str(other_midi_path), hand="left") # hand label irrelevant here
@@ -106,7 +106,7 @@ class Pipeline:
             piano_roll_path = None
         
         logger.info("Rendering PDF...")
-        pdf_result = render_pdf(str(output_file_path), str(pdf_path))
+        pdf_result = render_pdf(right_notes, left_notes, str(pdf_path), bpm=bpm)
 
         logger.info(f"Pipeline complete: {output_file_path}")
         return str(output_file_path), str(piano_roll_path) if piano_roll_path else None, pdf_result
