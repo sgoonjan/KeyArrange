@@ -72,13 +72,13 @@ class Pipeline:
         right_notes = load_midi(str(vocals_midi_path), hand="right")
 
         logger.info("Loading bass MIDI...")
-        left_notes = load_midi(str(bass_midi_path), hand="left")
+        bass_notes = load_midi(str(bass_midi_path), hand="left")
 
         logger.info("Loading other stem MIDI...")
         other_notes = load_midi(str(other_midi_path), hand="left") # hand label irrelevant here
 
         logger.info("Estimating chords...")
-        chords = estimate_chords(other_notes, beat_times, scale)
+        chords = estimate_chords(other_notes, bass_notes, beat_times, scale)
 
         logger.info("Generating chord-aware left hand...")
         left_notes = generate_left_hand(chords, beat_times, bpm)
@@ -90,9 +90,9 @@ class Pipeline:
         right_notes = apply_velocity_curve(right_notes, beat_times)
 
         logger.info("Applying transformations to Left hand notes...")
-        left_notes = density_reducer(left_notes, bpm)
-        left_notes = span_enforcer(left_notes, max_span=12, hand="left")
-        left_notes = note_cap(left_notes, max_notes=3)
+        # left_notes = density_reducer(left_notes, bpm)
+        # left_notes = span_enforcer(left_notes, max_span=12, hand="left")
+        # left_notes = note_cap(left_notes, max_notes=3)
         left_notes = apply_velocity_curve(left_notes, beat_times)
 
         logger.info("Merging tracks...")
@@ -106,7 +106,7 @@ class Pipeline:
             piano_roll_path = None
         
         logger.info("Rendering PDF...")
-        pdf_result = render_pdf(str(output_file_path), str(pdf_path))
+        pdf_result = render_pdf(right_notes, left_notes, str(pdf_path), bpm=bpm)
 
         logger.info(f"Pipeline complete: {output_file_path}")
         return str(output_file_path), str(piano_roll_path) if piano_roll_path else None, pdf_result
