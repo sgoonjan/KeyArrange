@@ -1,1 +1,32 @@
 I am done with all the transforms and ran the pipeline. I feel like the output has degraded in quality: I am not able to recognize the part that is after the intro either right now. I removed the note_cap function, and it seemed to have gotten better but still not that good.
+
+In Stage 2:
+- Scale of music only used to detect the tonic key for the chord to return to: It can be used for narrowing the chords right? Also for chord progression pattern: very common ones exist in pop
+- Suddenly the entire left hand is done by the other stem only. Bass completely knocked off?
+- Are the test cases really pop?
+
+Q: This is the PDF from the previous run without these changes: If you look at the bass clef, the tonic_key appears in the start most because of no actives defaulting it to C Major. But as the song progresses it still seems to have a lot of chords set to C Major, without this being the issue
+
+Making use of Pop well:
+- stick to definition of pop, if anything
+- use statistically significant results
+- use a mixture of test cases: standard pop examples as well as difficult ones
+
+Idea:
+- Can add a feature to detect the standard arpeggio of a song or try different arpeggios on a song
+
+
+
+
+Stage 2 is complete:
+- We first detected the key of the song using a library
+- Then extracted the bass and the other stem and transcribed them
+- Then used them to get the best matching diatonic chord by taking overlap with the notes in the other stem and getting a bass bonus using the bass stem
+
+Stage 3 Plan:
+Density scaling: General formula window_seconds * (bpm / 60)
+Outlier filter: Pitch range filter + Key compliance filer
+Melody smoothing: Basic Pitch confidence threshold + IOI filter
+Metric strength: is_on_beat from existing librosa beat times
+Harmonic functioning: Local chord note prioritisation
+madmom: Deferred — only needed for bar-level downbeat detection

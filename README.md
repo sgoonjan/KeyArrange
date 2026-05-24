@@ -93,10 +93,13 @@ The quick test: can a pianist sight-read it at moderate tempo, clearly assign ha
 - [x] MuseScore PDF rendering
 
 **v3 — in progress**
-- [ ] Beat tracking with madmom for better metric strength scoring
+- [ ] Outlier Filtering — retain notes within pitch range and key's diatonic set
 - [ ] Melody smoothing — strip ornaments and melisma from vocal transcription
+- [ ] Metric Strength — using existing librosa beat times
+- [ ] Harmonic function scoring — using chord labels from Stage 2
 
 **Later**
+- [ ] Beat tracking with madmom for better metric strength scoring
 - [ ] Fine-tuned arrangement model on POP909 dataset
 - [ ] Difficulty levels (beginner / intermediate / advanced)
 - [ ] Style options (ballad, jazz voicings)
