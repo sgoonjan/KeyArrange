@@ -7,7 +7,7 @@ from keyarrange.separation.demucs_runner import separate
 from keyarrange.transcription.basic_pitch_transcriptor import transcribe_stem
 
 from keyarrange.analysis.beat_tracker import get_beat_times
-from keyarrange.analysis.scale_detection import get_scale
+from keyarrange.analysis.key_detection import get_key
 
 from keyarrange.structure.midi_parser import load_midi
 from keyarrange.structure.chord_estimator import estimate_chords
@@ -65,8 +65,8 @@ class Pipeline:
         logger.info("Getting beat times...")
         beat_times, bpm = get_beat_times(str(self.input_path))
 
-        logger.info("Detecting scale...")
-        scale = get_scale(str(self.input_path))
+        logger.info("Detecting key...")
+        key = get_key(str(self.input_path))
 
         logger.info("Loading vocal MIDI...")
         right_notes = load_midi(str(vocals_midi_path), hand="right")
@@ -78,7 +78,7 @@ class Pipeline:
         other_notes = load_midi(str(other_midi_path), hand="left") # hand label irrelevant here
 
         logger.info("Estimating chords...")
-        chords = estimate_chords(other_notes, bass_notes, beat_times, scale)
+        chords = estimate_chords(other_notes, bass_notes, beat_times, key)
 
         logger.info("Generating chord-aware left hand...")
         left_notes = generate_left_hand(chords, beat_times, bpm)

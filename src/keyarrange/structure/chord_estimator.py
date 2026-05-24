@@ -4,7 +4,7 @@ from keyarrange.dataclasses import Note
 logger = logging.getLogger(__name__)
 
 # Extra score added if the chord root is present in the bass — helps disambiguate between candidates with similar harmonic scores
-BASS_BONUS = 0.33  # Set to be equivalent to exactly one additional chord tone match
+BASS_BONUS = 0.50  # Set to be equivalent to exactly one additional chord tone match
 
 # Chord quality intervals relative to root
 _CHORD_TEMPLATES = {
@@ -32,10 +32,10 @@ def estimate_chords(
     other_notes: list[Note],
     bass_notes: list[Note],
     beat_times: list[float],
-    scale: str,
+    key: str,
 ) -> list[tuple[str, float]]:
     """Returns list of (chord_label, beat_time) e.g. [('C major', 0.0), ('G major', 1.2)]."""
-    candidates = _candidates_for_scale(scale)
+    candidates = _candidates_for_key(key)
     chords = []
 
     for i, beat_start in enumerate(beat_times):
@@ -52,7 +52,7 @@ def estimate_chords(
                 bass_pcs.add(n.pitch % 12)
 
         if not other_pcs and not bass_pcs:
-            label = chords[-1][0] if chords else _tonic_chord(scale)
+            label = chords[-1][0] if chords else _tonic_chord(key)
         else:
             label = _best_chord(other_pcs, bass_pcs, candidates)
 
@@ -61,9 +61,9 @@ def estimate_chords(
     return chords
 
 
-def _candidates_for_scale(scale: str) -> list[tuple[int, str]]:
-    # Returns (root_pitch_class, quality) pairs diatonic to the scale
-    parts = scale.split()
+def _candidates_for_key(key: str) -> list[tuple[int, str]]:
+    # Returns (root_pitch_class, quality) pairs diatonic to the key
+    parts = key.split()
     root_pc = _NOTE_NAMES.index(parts[0])
     mode = parts[1]  # "major" or "minor"
     return [((root_pc + interval) % 12, quality)
@@ -84,8 +84,8 @@ def _best_chord(other_pcs: set[int], bass_pcs: set[int], candidates: list[tuple[
     return best_label
 
 
-def _tonic_chord(scale: str) -> str:
-    """Returns tonic chord from scale string e.g. 'A minor' → 'A minor'."""
-    # scale string is already 'Root quality' — tonic chord has same root and quality
-    parts = scale.split()
+def _tonic_chord(key: str) -> str:
+    """Returns tonic chord from key string e.g. 'A minor' → 'A minor'."""
+    # key string is already 'Root quality' — tonic chord has same root and quality
+    parts = key.split()
     return f"{parts[0]} {'major' if parts[1] == 'major' else 'minor'}"
