@@ -93,8 +93,8 @@ The quick test: can a pianist sight-read it at moderate tempo, clearly assign ha
 - [x] MuseScore PDF rendering
 
 **v3 — in progress**
-- [ ] Outlier Filtering — retain notes within pitch range and key's diatonic set
-- [ ] Melody smoothing — strip ornaments and melisma from vocal transcription
+- [x] Outlier Filtering — retain notes within pitch range and key's diatonic set
+- [x] Melody smoothing — strip ornaments and melisma from vocal transcription
 - [ ] Metric Strength — using existing librosa beat times
 - [ ] Harmonic function scoring — using chord labels from Stage 2
 
