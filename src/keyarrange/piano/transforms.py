@@ -22,9 +22,14 @@ def _group_by_onset(notes: list[Note], window_ms: float = 50.0) -> list[list[Not
 
     return groups
 
+
+def _note_score(note: Note, w1: float = 1.0, w2: float = 0.5, w3: float = 0.8) -> float:
+    return w1 * note.duration + w2 * float(note.is_on_beat)
+
 def density_reducer(notes: list[Note], bpm: float, multiplier: int = 1) -> list[Note]:
     window_duration = 0.5  # 500ms
     step_size = 0.25  # 250ms
+    max_notes_in_window = max(1, int(window_duration * (bpm / 60))) * multiplier
     dropped_note_ids = set()
 
     notes.sort(key=lambda note: note.start)
@@ -37,11 +42,9 @@ def density_reducer(notes: list[Note], bpm: float, multiplier: int = 1) -> list[
     while t <= last_note_start_time + window_duration: # Extend windowing slightly past the last note's start time
         window_notes = [note for note in notes if t <= note.start < t + window_duration and note.id not in dropped_note_ids]
 
-        max_notes_in_window = max(1, int(120 / bpm)) * multiplier
-
         if len(window_notes) > max_notes_in_window:
-            # Sort by duration (longest first) and keep only the top `max_notes_in_window`
-            window_notes.sort(key=lambda note: note.duration, reverse=True)
+            # Sort by note score (highest first) and keep only the top `max_notes_in_window`
+            window_notes.sort(key=_note_score, reverse=True)
             notes_to_drop = window_notes[max_notes_in_window:]
 
             for note in notes_to_drop:
@@ -79,7 +82,7 @@ def note_cap(notes: list[Note], max_notes: int = 3) -> list[Note]:
     onset_groups = _group_by_onset(notes)
 
     for group in onset_groups:
-        current_group = sorted(group, key=lambda note: note.duration)
+        current_group = sorted(group, key=_note_score)  # Sort by score, drop the least important notes
 
         while len(current_group) > max_notes:
             current_group.pop(0)  # Drop the shortest duration note

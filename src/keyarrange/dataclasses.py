@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 @dataclass
 class Note:
@@ -8,6 +8,7 @@ class Note:
     end: float
     velocity: int
     hand: str  # 'right' or 'left'
+    is_on_beat: bool = field(default=False, compare=False) # compare=False: beat assignment is derived, not part of note identity
 
     @property
     def duration(self) -> float:

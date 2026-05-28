@@ -7,10 +7,13 @@ from keyarrange.separation.demucs_runner import separate
 from keyarrange.transcription.basic_pitch_transcriptor import transcribe_stem
 
 from keyarrange.analysis.beat_tracker import get_beat_times
-from keyarrange.analysis.scale_detection import get_scale
+from keyarrange.analysis.key_detection import get_key
+from keyarrange.analysis.beat_tracker import assign_beat_strength
 
 from keyarrange.structure.midi_parser import load_midi
 from keyarrange.structure.chord_estimator import estimate_chords
+from keyarrange.structure.outlier_filter import filter_pitch_outliers
+from keyarrange.structure.melody_smoother import smooth_melody
 
 from keyarrange.piano.merge import merge_tracks
 from keyarrange.piano.voicing import apply_velocity_curve, generate_left_hand
@@ -65,8 +68,8 @@ class Pipeline:
         logger.info("Getting beat times...")
         beat_times, bpm = get_beat_times(str(self.input_path))
 
-        logger.info("Detecting scale...")
-        scale = get_scale(str(self.input_path))
+        logger.info("Detecting key...")
+        key = get_key(str(self.input_path))
 
         logger.info("Loading vocal MIDI...")
         right_notes = load_midi(str(vocals_midi_path), hand="right")
@@ -77,23 +80,64 @@ class Pipeline:
         logger.info("Loading other stem MIDI...")
         other_notes = load_midi(str(other_midi_path), hand="left") # hand label irrelevant here
 
-        logger.info("Estimating chords...")
-        chords = estimate_chords(other_notes, bass_notes, beat_times, scale)
-
-        logger.info("Generating chord-aware left hand...")
+        logger.info("Estimating and generating chord-aware left hand...")
+        chords = estimate_chords(other_notes, bass_notes, beat_times, key)
         left_notes = generate_left_hand(chords, beat_times, bpm)
 
-        logger.info("Applying transformations to Right hand notes...")
-        right_notes = density_reducer(right_notes, bpm, multiplier=2)  # Allow density relaxation for vocals
-        right_notes = span_enforcer(right_notes, max_span=12, hand="right")
-        right_notes = note_cap(right_notes, max_notes=3)
-        right_notes = apply_velocity_curve(right_notes, beat_times)
-
         logger.info("Applying transformations to Left hand notes...")
+        left_notes = assign_beat_strength(left_notes, beat_times)
         # left_notes = density_reducer(left_notes, bpm)
         # left_notes = span_enforcer(left_notes, max_span=12, hand="left")
         # left_notes = note_cap(left_notes, max_notes=3)
-        left_notes = apply_velocity_curve(left_notes, beat_times)
+        left_notes = apply_velocity_curve(left_notes, beat_times, "left")
+
+        logger.info("Applying transformations to Right hand notes...")
+
+        raw_right_hand_notes = right_notes
+        right_notes = filter_pitch_outliers(right_notes, key)
+        filtered_right_notes = right_notes
+
+        right_notes = smooth_melody(right_notes, bpm)
+        smoothed_right_notes = right_notes
+
+        right_notes = assign_beat_strength(right_notes, beat_times)
+        right_notes = density_reducer(right_notes, bpm, multiplier=2)  # Allow density relaxation for vocals
+        right_notes = span_enforcer(right_notes, max_span=12, hand="right")
+        right_notes = note_cap(right_notes, max_notes=3)
+        right_notes = apply_velocity_curve(right_notes, beat_times, "right")
+
+
+        # Verification of Right Hand Transformations
+        # For Filtering:
+        before = len(raw_right_hand_notes)
+        after = len(filtered_right_notes)
+        dropped = [n for n in raw_right_hand_notes if n not in filtered_right_notes]
+        print(f"Outlier filter: {before} → {after} notes ({before - after} dropped)")
+        print("Dropped pitches:", sorted(set(n.pitch for n in dropped)))
+        pc_to_note = {0: "C", 1: "C#", 2: "D", 3: "D#", 4: "E", 5: "F", 6: "F#", 7: "G", 8: "G#", 9: "A", 10: "A#", 11: "B"}
+        print("Dropped pitch classes:", set((n.pitch, pc_to_note[n.pitch % 12]) for n in sorted(dropped, key=lambda n: n.start)))
+
+        # Verification of Melody Smoothing:
+        before = len(filtered_right_notes)
+        after = len(smoothed_right_notes)
+        print(f"Melody smoother: {before} → {after} notes ({before - after} dropped)")
+        durations_before = sorted(n.duration for n in filtered_right_notes)
+        durations_after = sorted(n.duration for n in smoothed_right_notes)
+        sixteenth = 60 / bpm / 4
+        short_before = sum(1 for d in durations_before if d < sixteenth)
+        short_after = sum(1 for d in durations_after if d < sixteenth)
+        print(f"Notes shorter than 1/16th: {short_before} → {short_after}")
+
+        # Verification for Music Beat Strength Assignment:
+        on_beat = sum(1 for n in right_notes if n.is_on_beat)
+        off_beat = sum(1 for n in right_notes if not n.is_on_beat)
+        print(f"On-beat: {on_beat}, Off-beat: {off_beat}")
+        # Spot checking a few notes manually:
+        for n in sorted(right_notes, key=lambda n: n.start)[:25]:
+            nearest_beat = min(beat_times, key=lambda b: abs(b - n.start))
+            print(f"start={n.start:.3f}  nearest_beat={nearest_beat:.3f}  "
+                  f"dist={abs(n.start - nearest_beat)*1000:.1f}ms  on_beat={n.is_on_beat}")
+
 
         logger.info("Merging tracks...")
         merge_tracks(right_notes, left_notes, str(output_file_path), bpm)

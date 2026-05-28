@@ -7,20 +7,24 @@ def _nearest_beat_index(time: float, beat_times: list[float]) -> int:
     return min(range(len(beat_times)), key=lambda i: abs(beat_times[i] - time))
 
 
-def apply_velocity_curve(notes: list[Note], beat_times: list[float]) -> list[Note]:
+def apply_velocity_curve(notes: list[Note], beat_times: list[float], role: str = "right") -> list[Note]:
     # Beat-strength velocity: downbeats loud, weak beats soft, humanized
+    if role == "right":
+        velocities = {0: 90, 2: 75, "weak": 60}
+    else:
+        velocities = {0: 65, 2: 50, "weak": 40}
     result = []
     for note in notes:
         beat_index = _nearest_beat_index(note.start, beat_times)
         
         if beat_index % 4 == 0:
-            base_velocity = 90      # downbeat
+            base_velocity = velocities[0]       # downbeat
         elif beat_index % 2 == 0:
-            base_velocity = 75      # beat 3
+            base_velocity = velocities[2]       # beat 3
         else:
-            base_velocity = 60      # weak beats
+            base_velocity = velocities["weak"]  # weak beats
         
-        humanized = base_velocity + random.randint(-10, 10)
+        humanized = base_velocity + random.randint(-8, 8)  # Add some random variation for a more human feel
         velocity = max(30, min(110, humanized))  # clamp to sensible piano range
         
         result.append(Note(id=note.id, pitch=note.pitch, start=note.start, end=note.end, velocity=velocity, hand=note.hand))
