@@ -2,6 +2,8 @@ import librosa
 import numpy as np
 import sys
 import os
+from keyarrange.dataclasses import Note
+
 
 def get_beat_times(audio_path: str) -> tuple[np.ndarray, float]:
     """
@@ -18,6 +20,15 @@ def get_beat_times(audio_path: str) -> tuple[np.ndarray, float]:
         raise ValueError("No beats detected in the audio file.")
 
     return beat_times, bpm
+
+
+def assign_beat_strength(notes: list[Note], beat_times: np.ndarray, window: float = 0.1) -> list[Note]:
+    """Tag each note with is_on_beat using existing librosa beat times."""
+    for note in notes:
+        note.is_on_beat = bool(
+            np.any(np.abs(beat_times - note.start) <= window)
+        )
+    return notes
 
 
 if __name__ == "__main__":
